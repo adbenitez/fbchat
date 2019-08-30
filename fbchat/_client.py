@@ -86,8 +86,6 @@ class Client:
         """
         self._sticky, self._pool = (None, None)
         self._seq = "0"
-        self._default_thread_id = None
-        self._default_thread_type = None
         self._pull_channel = 0
         self._markAlive = True
         self._buddylist = dict()
@@ -232,45 +230,6 @@ class Client:
 
     """
     END LOGIN METHODS
-    """
-
-    """
-    DEFAULT THREAD METHODS
-    """
-
-    def _getThread(self, given_thread_id=None, given_thread_type=None):
-        """Check if thread ID is given and if default is set, and return correct values.
-
-        Returns:
-            tuple: Thread ID and thread type
-
-        Raises:
-            ValueError: If thread ID is not given and there is no default
-        """
-        if given_thread_id is None:
-            if self._default_thread_id is not None:
-                return self._default_thread_id, self._default_thread_type
-            else:
-                raise ValueError("Thread ID is not set")
-        else:
-            return given_thread_id, given_thread_type
-
-    def setDefaultThread(self, thread_id, thread_type):
-        """Set default thread to send messages to.
-
-        Args:
-            thread_id: User/Group ID to default to. See :ref:`intro_threads`
-            thread_type (ThreadType): See :ref:`intro_threads`
-        """
-        self._default_thread_id = thread_id
-        self._default_thread_type = thread_type
-
-    def resetDefaultThread(self):
-        """Reset default thread."""
-        self.setDefaultThread(None, None)
-
-    """
-    END DEFAULT THREAD METHODS
     """
 
     """
@@ -492,8 +451,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-
         data = {
             "query": query,
             "snippetOffset": offset,
@@ -754,8 +711,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-
         params = {
             "id": thread_id,
             "message_limit": limit,
@@ -897,7 +852,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
         message_info = self._forcedFetch(thread_id, mid).get("message")
         return Message._from_graphql(message_info)
 
@@ -982,7 +936,6 @@ class Client:
         Returns:
             typing.Iterable: :class:`ImageAttachment` or :class:`VideoAttachment`
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
         data = {"id": thread_id, "first": 48}
         thread_id = str(thread_id)
         j, = self.graphql_requests(_graphql.from_query_id("515216185516880", data))
@@ -1044,7 +997,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
         thread = thread_type._to_class()(thread_id)
         data = thread._to_send_data()
         data.update(message._to_send_data())
@@ -1064,7 +1016,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
         thread = thread_type._to_class()(thread_id)
         data = thread._to_send_data()
         data["action_type"] = "ma-type:user-generated-message"
@@ -1129,7 +1080,6 @@ class Client:
     def _sendLocation(
         self, location, current=True, message=None, thread_id=None, thread_type=None
     ):
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
         thread = thread_type._to_class()(thread_id)
         data = thread._to_send_data()
         if message is not None:
@@ -1198,7 +1148,6 @@ class Client:
 
         `files` should be a list of tuples, with a file's ID and mimetype.
         """
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
         thread = thread_type._to_class()(thread_id)
         data = thread._to_send_data()
         data.update(self._oldMessage(message)._to_send_data())
@@ -1314,7 +1263,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
         data = {
             "attachment_id": attachment_id,
             "recipient_map[{}]".format(_util.generateOfflineThreadingID()): thread_id,
@@ -1364,7 +1312,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
         data = Group(thread_id)._to_send_data()
 
         data["action_type"] = "ma-type:log-message"
@@ -1394,14 +1341,10 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-
         data = {"uid": user_id, "tid": thread_id}
         j = self._payload_post("/chat/remove_participants/", data)
 
     def _adminStatus(self, admin_ids, admin, thread_id=None):
-        thread_id, thread_type = self._getThread(thread_id, None)
-
         data = {"add": admin, "thread_fbid": thread_id}
 
         admin_ids = _util.require_list(admin_ids)
@@ -1445,14 +1388,10 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-
         data = {"set_mode": int(require_admin_approval), "thread_fbid": thread_id}
         j = self._payload_post("/messaging/set_approval_mode/?dpr=1", data)
 
     def _usersApproval(self, user_ids, approve, thread_id=None):
-        thread_id, thread_type = self._getThread(thread_id, None)
-
         user_ids = _util.require_list(user_ids)
 
         data = {
@@ -1501,8 +1440,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-
         data = {"thread_image_id": image_id, "thread_id": thread_id}
 
         j = self._payload_post("/messaging/set_thread_image/?dpr=1", data)
@@ -1550,8 +1487,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
-
         if thread_type == ThreadType.USER:
             # The thread is a user, so we change the user's nickname
             return self.changeNickname(
@@ -1575,8 +1510,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
-
         data = {
             "nickname": nickname,
             "participant_id": user_id,
@@ -1596,8 +1529,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-
         data = {
             "color_choice": color.value if color != ThreadColor.MESSENGER_BLUE else "",
             "thread_or_other_fbid": thread_id,
@@ -1620,8 +1551,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-
         data = {"emoji_choice": emoji, "thread_or_other_fbid": thread_id}
         j = self._payload_post(
             "/messaging/save_thread_emoji/?source=thread_settings&dpr=1", data
@@ -1658,8 +1587,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-
         data = {
             "event_type": "EVENT",
             "event_time": plan.time,
@@ -1736,8 +1663,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
-
         # We're using ordered dictionaries, because the Facebook endpoint that parses
         # the POST parameters is badly implemented, and deals with ordering the options
         # wrongly. If you can find a way to fix this for the endpoint, or if you find
@@ -1794,8 +1719,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, thread_type)
-
         data = {
             "typ": status.value,
             "thread": thread_id,
@@ -2005,7 +1928,6 @@ class Client:
         Raises:
             FBchatException: If request failed
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
         j = self._payload_post("/ajax/mercury/mark_spam.php?dpr=1", {"id": thread_id})
         return True
 
@@ -2035,7 +1957,6 @@ class Client:
             mute_time: Mute time in seconds, leave blank to mute forever
             thread_id: User/Group ID to mute. See :ref:`intro_threads`
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
         data = {"mute_settings": str(mute_time), "thread_fbid": thread_id}
         j = self._payload_post("/ajax/mercury/change_mute_thread.php?dpr=1", data)
 
@@ -2054,7 +1975,6 @@ class Client:
             mute: Boolean. True to mute, False to unmute
             thread_id: User/Group ID to mute. See :ref:`intro_threads`
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
         data = {"reactions_mute_mode": int(mute), "thread_fbid": thread_id}
         j = self._payload_post(
             "/ajax/mercury/change_reactions_mute_thread/?dpr=1", data
@@ -2075,7 +1995,6 @@ class Client:
             mute: Boolean. True to mute, False to unmute
             thread_id: User/Group ID to mute. See :ref:`intro_threads`
         """
-        thread_id, thread_type = self._getThread(thread_id, None)
         data = {"mentions_mute_mode": int(mute), "thread_fbid": thread_id}
         j = self._payload_post("/ajax/mercury/change_mentions_mute_thread/?dpr=1", data)
 
