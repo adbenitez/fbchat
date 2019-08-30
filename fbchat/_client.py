@@ -2006,6 +2006,7 @@ class Client:
             "https://{}-edge-chat.facebook.com/active_ping".format(self._pull_channel),
             data,
         )
+        _util.handle_payload_error(j)
 
     def _pullMessage(self):
         """Call pull api to fetch message data."""
@@ -2017,9 +2018,11 @@ class Client:
             "clientid": self._state._client_id,
             "state": "active" if self._markAlive else "offline",
         }
-        return self._get(
+        j = self._get(
             "https://{}-edge-chat.facebook.com/pull".format(self._pull_channel), data
         )
+        _util.handle_payload_error(j)
+        return j
 
     def _parseDelta(self, m):
         def getThreadIdAndThreadType(msg_metadata):
